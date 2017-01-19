@@ -11,6 +11,6 @@ For example:
 
 (λ-define (foo x)
   (+ x 5))
-(λ-access foo)
+(λ-access-list foo)
 ;=> '(λ (x) (+ x 5))
 ```
