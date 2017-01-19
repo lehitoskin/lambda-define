@@ -40,9 +40,10 @@
 @examples[
 #:eval (parameterize ([sandbox-output 'string]
                       [sandbox-error-output 'string])
-         (make-module-evaluator (build-path "../lambda-define.rkt")
+         (make-module-evaluator (build-path "doc/../lambda-define.rkt")
                                 #:language 'racket/base))
 #:once
+
 (λ-define (foo . bar)
   (for ([b (in-list bar)])
     (displayln b)))
