@@ -14,4 +14,5 @@
 
 (define deps '("base"
                "scribble-lib"))
-(define build-deps '("racket-doc"))
+(define build-deps '("racket-doc"
+                     "sandbox-lib"))
