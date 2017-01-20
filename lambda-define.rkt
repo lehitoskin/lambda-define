@@ -1,7 +1,7 @@
 #lang racket/base
 ; lambda-define.rkt
 ; GPL-3+
-(require rackunit)
+(require racket/list rackunit)
 (provide (struct-out λ-access) λ-define λ-set!)
 
 (struct λ-access (proc list)
@@ -14,26 +14,34 @@
     [(_ (id) body0 ...)
      (begin
        (define id
-         (λ-access (procedure-rename (λ () body0 ...) (quote id))
+         (λ-access (procedure-rename (λ () body0 ...) 'id)
                    '(λ () body0 ...))))]
     ; one or more parameters
     [(_ (id arg0 ...) body0 ...)
      (begin
        (define id
-         (λ-access (procedure-rename (λ (arg0 ...) body0 ...) (quote id))
-                   `(λ ,(quote (arg0 ...)) body0 ...))))]
+         (λ-access (procedure-rename (λ (arg0 ...) body0 ...) 'id)
+                   '(λ (arg0 ...) body0 ...))))]
     ; args with rest args
     [(_ (id arg0 ... . rest-arg) body0 ...)
      (begin
        (define id
-         (λ-access (procedure-rename (λ (arg0 ... . rest-arg) body0 ...) (quote id))
-                   `(λ ,(quote (arg0 ... . rest-arg)) body0 ...))))]
+         (λ-access (procedure-rename (λ (arg0 ... . rest-arg) body0 ...) 'id)
+                   '(λ (arg0 ... . rest-arg) body0 ...))))]
     ; rest args
     [(_ (id . rest-arg) body0 ...)
      (begin
        (define id
-         (λ-access (procedure-rename (λ rest-arg body0 ...) (quote id))
-                   `(λ ,(quote rest-arg) body0 ...))))]))
+         (λ-access (procedure-rename (λ rest-arg body0 ...) 'id)
+                   '(λ rest-arg body0 ...))))]
+    ; value
+    [(_ id body)
+     (begin
+       (define id
+         (λ-access (if (procedure? body)
+                       (procedure-rename body 'id)
+                       body)
+                   'body)))]))
 
 (define-syntax-rule (λ-set! id lmb)
   (set! id (λ-access (procedure-rename lmb (quote id)) (quote lmb))))
@@ -49,8 +57,11 @@
 
 (define lmbs
   (for/fold ([accum '(body0 ...)])
-            ([arg (in-list (reverse arg-lst))])
-    (append `(λ ,arg) (list accum))))
+            ([arg (in-list (reverse arg-lst))]
+             [i (in-naturals)])
+    (if (= i 0)
+        (append `(λ ,arg) accum)
+        (append `(λ ,arg) (list accum)))))
 (define-values (before after) (split-at lmbs 2))
 (values
  (caadr before)
@@ -81,4 +92,11 @@
   (check-equal? (λ-access-list bin) '(λ args (println args)))
 
   (λ-define (qub #:kw kw) (+ kw 5))
-  (check-equal? (λ-access-list qub) '(λ (#:kw kw) (+ kw 5))))
+  (check-equal? (λ-access-list qub) '(λ (#:kw kw) (+ kw 5)))
+
+  ; value
+  (λ-define qud (λ () 'qud))
+  (check-equal? (λ-access-list qud) '(λ () 'qud))
+
+  (λ-define qug (+ 1 2))
+  (check-equal? (λ-access-list qug) '(+ 1 2)))
