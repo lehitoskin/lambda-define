@@ -1,71 +1,22 @@
 #lang racket/base
 ; lambda-define.rkt
 ; GPL-3+
-(require racket/list rackunit)
+(require rackunit (for-syntax racket/base syntax/define))
 (provide (struct-out λ-access) λ-define λ-set!)
 
 (struct λ-access (proc list)
   #:property prop:procedure
   (struct-field-index proc))
 
-(define-syntax λ-define
-  (syntax-rules ()
-    ; no parameters
-    [(_ (id) body0 ...)
-     (begin
-       (define id
-         (λ-access (procedure-rename (λ () body0 ...) 'id)
-                   '(λ () body0 ...))))]
-    ; one or more parameters
-    [(_ (id arg0 ...) body0 ...)
-     (begin
-       (define id
-         (λ-access (procedure-rename (λ (arg0 ...) body0 ...) 'id)
-                   '(λ (arg0 ...) body0 ...))))]
-    ; args with rest args
-    [(_ (id arg0 ... . rest-arg) body0 ...)
-     (begin
-       (define id
-         (λ-access (procedure-rename (λ (arg0 ... . rest-arg) body0 ...) 'id)
-                   '(λ (arg0 ... . rest-arg) body0 ...))))]
-    ; rest args
-    [(_ (id . rest-arg) body0 ...)
-     (begin
-       (define id
-         (λ-access (procedure-rename (λ rest-arg body0 ...) 'id)
-                   '(λ rest-arg body0 ...))))]
-    ; value
-    [(_ id body)
-     (begin
-       (define id
-         (λ-access (if (procedure? body)
-                       (procedure-rename body 'id)
-                       body)
-                   'body)))]))
+; thanks to mbutterick
+(define-syntax (λ-define stx)
+  (with-syntax ([(id lambda-exp)
+                 (let-values ([(id-stx body-exp-stx) (normalize-definition stx #'λ #t #t)])
+                   (list id-stx body-exp-stx))])
+    #'(define id (λ-access lambda-exp 'lambda-exp))))
 
 (define-syntax-rule (λ-set! id lmb)
-  (set! id (λ-access (procedure-rename lmb (quote id)) (quote lmb))))
-
-; (λ-define (((foo bar) baz) bin) ...) ; => '(λ (bar) (λ (baz) (λ (bin) ...)))
-#|(define arg-lst
-  (let loop ([nested '(((((id a) b)) d) e)]
-             [accum '()])
-    (cond [(and (list? nested) (list? (car nested)))
-           (loop (car nested) (cons (cdr nested) accum))]
-          [(and (list? nested) (not (list? (car nested))))
-           (cons nested accum)])))
-
-(define lmbs
-  (for/fold ([accum '(body0 ...)])
-            ([arg (in-list (reverse arg-lst))]
-             [i (in-naturals)])
-    (if (= i 0)
-        (append `(λ ,arg) accum)
-        (append `(λ ,arg) (list accum)))))
-(define-values (before after) (split-at lmbs 2))
-(values
- (caadr before)
- (append `(λ ,(cdadr before)) after))|#
+  (set! id (λ-access (procedure-rename lmb 'id) 'lmb)))
 
 (module+ test
   (λ-define (identity1) (void))
@@ -99,4 +50,8 @@
   (check-equal? (λ-access-list qud) '(λ () 'qud))
 
   (λ-define qug (+ 1 2))
-  (check-equal? (λ-access-list qug) '(+ 1 2)))
+  (check-equal? (λ-access-list qug) '(+ 1 2))
+
+  ; currying
+  (λ-define ((add n) m) (+ n m))
+  (check-equal? (λ-access-list add) '(λ (n) (λ (m) (+ n m)))))
