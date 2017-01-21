@@ -13,10 +13,19 @@
   (with-syntax ([(id lambda-exp)
                  (let-values ([(id-stx body-exp-stx) (normalize-definition stx #'λ #t #t)])
                    (list id-stx body-exp-stx))])
-    #'(define id (λ-access lambda-exp 'lambda-exp))))
+    #'(define id (if (procedure? lambda-exp)
+                     (λ-access (procedure-rename lambda-exp 'id)
+                               'lambda-exp)
+                     lambda-exp))))
 
-(define-syntax-rule (λ-set! id lmb)
-  (set! id (λ-access (procedure-rename lmb 'id) 'lmb)))
+(define-syntax (λ-set! stx)
+  (with-syntax ([(id lambda-exp)
+                 (let-values ([(id-stx body-exp-stx) (normalize-definition stx #'λ #t #t)])
+                   (list id-stx body-exp-stx))])
+    #'(set! id (if (procedure? lambda-exp)
+                   (λ-access (procedure-rename lambda-exp 'id)
+                             'lambda-exp)
+                   lambda-exp))))
 
 (module+ test
   (λ-define (identity1) (void))
@@ -49,8 +58,9 @@
   (λ-define qud (λ () 'qud))
   (check-equal? (λ-access-list qud) '(λ () 'qud))
 
+  ; not a procedure
   (λ-define qug (+ 1 2))
-  (check-equal? (λ-access-list qug) '(+ 1 2))
+  (check-false (λ-access? qug))
 
   ; currying
   (λ-define ((add n) m) (+ n m))

@@ -14,7 +14,8 @@
   a procedure or perhaps what exactly its definition is. Instead of opening the
   file and scrolling all the way to where it's located, simply call
   @racket[(λ-access-list procedure-name)] and you'll be greeted with a list
-  version of the procedure. Note: This will work with defining values as well.
+  version of the procedure. Note: This will work with defining values, but the
+  list representation will not be saved.
 }
 
 @defstruct[λ-access ([proc procedure?] [list list?]) #:omit-constructor]{
