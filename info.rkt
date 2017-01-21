@@ -7,12 +7,13 @@
 (define primary-file "lambda-define.rkt")
 (define homepage "https://github.com/lehitoskin/lambda-define/")
 
-(define version "0.1")
-(define release-notes '("Initial package assembly."))
+(define version "0.2")
+(define release-notes '("Currying accounted for."))
 
 (define required-core-version "6.3")
 
 (define deps '("base"
+               "rackunit-lib"
                "scribble-lib"))
 (define build-deps '("racket-doc"
                      "sandbox-lib"))
